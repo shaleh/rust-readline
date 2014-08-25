@@ -1,0 +1,5 @@
+[package]
+
+name = "readline"
+version = "0.0.1"
+authors = ["Sean Perry", "Mika Attila"]
