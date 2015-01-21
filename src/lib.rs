@@ -1,7 +1,8 @@
 #![crate_type = "lib"]
 extern crate libc;
 
-use std::c_str;
+use std::str;
+use std::ffi::{CString, c_str_to_bytes};
 
 mod ext_readline {
     use libc::c_char;
@@ -14,19 +15,24 @@ mod ext_readline {
 
 pub fn add_history(line: &str) {
     unsafe {
-        ext_readline::add_history(line.to_c_str().as_ptr());
+        ext_readline::add_history(CString::from_slice(line.as_bytes()).as_ptr());
     }
 }
 
 pub fn readline(prompt: &str) -> Option<String> {
-    let cprmt = prompt.to_c_str();
+    let cprmt = CString::from_slice(prompt.as_bytes());
     unsafe {
         let ret = ext_readline::readline(cprmt.as_ptr());
         if ret.is_null() {  // user pressed Ctrl-D
             None
         }
         else {
-            c_str::CString::new(ret, true).as_str().map(|ret| ret.to_string())
+            match str::from_utf8(c_str_to_bytes(&ret)) {
+                Ok(s) => Some(s.to_string()),
+
+                _ => None
+            }
         }
     }
 }
+
