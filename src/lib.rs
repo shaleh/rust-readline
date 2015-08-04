@@ -1,4 +1,3 @@
-#![crate_type = "lib"]
 extern crate libc;
 
 use std::ffi::CString;
@@ -8,8 +7,7 @@ use std::string::String;
 mod ext_readline {
     use libc::c_char;
 
-    #[link(name = "readline")]
-    extern {
+    extern "C" {
         pub fn add_history(line: *const c_char);
         pub fn readline(p: *const c_char) -> *const c_char;
     }
