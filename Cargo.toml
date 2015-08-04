@@ -1,8 +1,10 @@
 [package]
-
 name = "readline"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Sean Perry", "Mika Attila"]
-[dependencies]
+build = "build.rs"
+description = "Simple wrapper around libreadline or libedit"
+repository = "https://github.com/shaleh/rust-readline"
 
-libc = "0.1"
+[dependencies]
+libc = "*"
