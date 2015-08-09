@@ -44,10 +44,12 @@ pub fn readline(prompt: &str) -> Option<String> {
         }
         else {
             let slice = CStr::from_ptr(ret);
-
             let bytes = slice.to_bytes();
+            let string = String::from_utf8_lossy(bytes).into_owned().clone();
 
-            Some(String::from_utf8_lossy(bytes).into_owned())
+            libc::free(ret as *mut libc::c_void);
+
+            Some(string)
         }
     }
 }
