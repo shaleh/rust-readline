@@ -25,17 +25,19 @@ mod ext_readline {
 ///
 /// Call this after a successful `readline()` call to add that line to the
 /// history.
-pub fn add_history(line: &str) {
+pub fn add_history<S>(line: S)
+    where S: Into<Vec<u8>> {
     unsafe {
         ext_readline::add_history(CString::new(line).unwrap().as_ptr());
     }
 }
 
-/// Invoke the external `readline()`. 
+/// Invoke the external `readline()`.
 ///
 /// Returns an `Option<String>` representing whether a `String` was returned
 /// or NULL. `None` indicates the user has signal end of input.
-pub fn readline(prompt: &str) -> Option<String> {
+pub fn readline<S>(prompt: S) -> Option<String>
+    where S: Into<Vec<u8>> {
     let cprmt = CString::new(prompt).unwrap().as_ptr();
     unsafe {
         let ret = ext_readline::readline(cprmt);
