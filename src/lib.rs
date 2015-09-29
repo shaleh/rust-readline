@@ -143,38 +143,4 @@ pub fn history() -> Vec<String> {
 
     result
   }
-    // ReadlineIter { first: true }
-}
-
-pub struct ReadlineIter {
-    first: bool,
-}
-
-impl Iterator for ReadlineIter {
-    type Item = String;
-    fn next(&mut self) -> Option<String> {
-      unsafe {
-        if self.first {
-            loop {
-                let value = ext_readline::previous_history();
-                if value.is_null() {
-                    break;
-                }
-            }
-
-            self.first = false;
-        }
-
-        let value = ext_readline::next_history();
-        if value.is_null() {
-            return None;
-        }
-
-        let slice = CStr::from_ptr((*value).line);
-        let bytes = slice.to_bytes();
-        let output = String::from_utf8_lossy(bytes).into_owned().clone();
-
-        Some(output)
-      }
-    }
 }
