@@ -1,6 +1,6 @@
 [package]
 name = "readline"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Sean Perry", "Mika Attila"]
 build = "build.rs"
 description = "Simple wrapper around libreadline or libedit"

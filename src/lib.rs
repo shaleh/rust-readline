@@ -8,15 +8,33 @@
 
 extern crate libc;
 
+use libc::c_char;
+
 use std::ffi::CString;
 use std::ffi::CStr;
+use std::ptr;
 use std::string::String;
 
 mod ext_readline {
-    use libc::c_char;
+    use libc::{c_char, c_void};
+
+    #[repr(C)]
+    pub struct HIST_ENTRY {
+	pub line: *const c_char,
+        pub data: *mut c_void,
+    }
 
     extern "C" {
+        /* History Support */
         pub fn add_history(line: *const c_char);
+        pub fn next_history() -> *const HIST_ENTRY;
+        pub fn previous_history() -> *const HIST_ENTRY;
+        pub fn history_expand(input: *const c_char, expansion: *mut *mut c_char) -> i32;
+        pub fn stifle_history(n: i32);
+        pub fn unstifle_history() -> i32;
+        pub fn history_is_stifled() -> i32;
+
+        /* readline */
         pub fn readline(p: *const c_char) -> *const c_char;
     }
 }
@@ -31,7 +49,49 @@ pub fn add_history(line: &str) {
     }
 }
 
-/// Invoke the external `readline()`. 
+pub fn stifle_history(n: i32) {
+    unsafe {
+        ext_readline::stifle_history(n);
+    }
+}
+
+pub fn unstifle_history() -> i32 {
+    unsafe {
+        ext_readline::unstifle_history()
+    }
+}
+
+pub fn history_is_stifled() -> bool {
+    unsafe {
+        ext_readline::history_is_stifled() != 0
+    }
+}
+
+pub fn history_expand(input: &str) -> Result<Option<String>, String> {
+    unsafe {
+        let mut expansion: *mut c_char = ptr::null_mut();
+        let result = ext_readline::history_expand(CString::new(input).unwrap().as_ptr(),
+                                                  (&mut expansion));
+        if result == 0 {
+            return Ok(None);
+        }
+
+        let slice = CStr::from_ptr(expansion);
+        let bytes = slice.to_bytes();
+        let output = String::from_utf8_lossy(bytes).into_owned().clone();
+
+        libc::free(expansion as *mut libc::c_void);
+
+        if result < 0 || result == 2 {
+            Err(output)
+        }
+        else {
+            Ok(Some(output))
+        }
+    }
+}
+
+/// Invoke the external `readline()`.
 ///
 /// Returns an `Option<String>` representing whether a `String` was returned
 /// or NULL. `None` indicates the user has signal end of input.
@@ -54,5 +114,67 @@ pub fn readline(prompt: &str) -> Option<String> {
 
             Some(line)
         }
+    }
+}
+
+pub fn history() -> Vec<String> {
+  unsafe {
+    loop {
+        let value = ext_readline::previous_history();
+        if value.is_null() {
+            break;
+        }
+    }
+
+    let mut result: Vec<String> = Vec::new();
+
+    loop {
+        let value = ext_readline::next_history();
+        if value.is_null() {
+            break;
+        }
+
+        let slice = CStr::from_ptr((*value).line);
+        let bytes = slice.to_bytes();
+        let output = String::from_utf8_lossy(bytes).into_owned().clone();
+
+        result.push(output);
+    }
+
+    result
+  }
+    // ReadlineIter { first: true }
+}
+
+pub struct ReadlineIter {
+    first: bool,
+}
+
+impl Iterator for ReadlineIter {
+    type Item = String;
+    fn next(&mut self) -> Option<String> {
+      unsafe {
+        if self.first {
+            loop {
+                let value = ext_readline::previous_history();
+                if value.is_null() {
+                    break;
+                }
+            }
+
+            self.first = false;
+        }
+
+        let value = ext_readline::next_history();
+        if value.is_null() {
+            return None;
+        }
+
+        let slice = CStr::from_ptr((*value).line);
+        let bytes = slice.to_bytes();
+        let output = String::from_utf8_lossy(bytes).into_owned().clone();
+
+        Some(output)
+      }
     }
 }
