@@ -10,4 +10,4 @@ Exposes:
  - `history_is_stifled() -> bool`
  - `stifle_history(n: i32)`
  - `unstifle_history() -> i32`
- - `readline(prompt: &str) -> Option<~str>`
+ - `readline(prompt: &str) -> Option<String>`

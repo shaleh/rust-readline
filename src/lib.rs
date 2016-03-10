@@ -1,8 +1,13 @@
 //! A Simple wrapper for libreadline or libedit
 //!
-//! Exports two functions:
+//! Exports seven functions:
 //!
 //!   - `add_history`
+//!   - `history`
+//!   - `history_expand`
+//!   - `history_is_stifled`
+//!   - `stifle_history`
+//!   - `unstifle_history`
 //!   - `readline`
 //!
 
