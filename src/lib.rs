@@ -41,6 +41,12 @@ mod ext_readline {
 
         /* readline */
         pub fn readline(p: *const c_char) -> *const c_char;
+
+        /* Asynchronous Interface */
+        pub fn rl_callback_handler_install(prompt: *const c_char,
+            lhandler: extern fn(*const c_char));
+        pub fn rl_callback_read_char();
+        pub fn rl_callback_handler_remove();
     }
 }
 
@@ -96,6 +102,27 @@ pub fn history_expand(input: &str) -> Result<Option<String>, String> {
     }
 }
 
+// converts a malloc'd char* returned from readline into a String, and frees the char*
+fn c_str_to_string(cstr: *const c_char) -> Option<String> {
+    if cstr.is_null() {  // user pressed Ctrl-D
+        None
+    }
+    else {
+        unsafe {
+            let slice = CStr::from_ptr(cstr);
+            let bytes = slice.to_bytes();
+
+            // the cstrurn from readline needs to be explicitly freed
+            // so clone the input first
+            let line = String::from_utf8_lossy(bytes).into_owned().clone();
+
+            libc::free(cstr as *mut libc::c_void);
+
+            Some(line)
+        }
+    }
+}
+
 /// Invoke the external `readline()`.
 ///
 /// Returns an `Option<String>` representing whether a `String` was returned
@@ -104,21 +131,46 @@ pub fn readline(prompt: &str) -> Option<String> {
     let cprmt = CString::new(prompt).unwrap().as_ptr();
     unsafe {
         let ret = ext_readline::readline(cprmt);
-        if ret.is_null() {  // user pressed Ctrl-D
-            None
-        }
-        else {
-            let slice = CStr::from_ptr(ret);
-            let bytes = slice.to_bytes();
+        c_str_to_string(ret)
+    }
+}
 
-            // the return from readline needs to be explicitly freed
-            // so clone the input first
-            let line = String::from_utf8_lossy(bytes).into_owned().clone();
+static mut _lhandler: Option<fn(Option<String>)> = None;
 
-            libc::free(ret as *mut libc::c_void);
+extern fn coerced_callback(ret: *const c_char) {
+    let line = c_str_to_string(ret);
 
-            Some(line)
-        }
+    unsafe {
+        _lhandler.unwrap()(line);
+    }
+}
+
+/// Install a new input handler.
+///
+/// This function must be called before `rl_callback_read_char()` or risk
+/// panicking.
+pub fn rl_callback_handler_install(prompt: &str, lhandler: fn(Option<String>)) {
+    let cprmt = CString::new(prompt).unwrap().as_ptr();
+    unsafe { _lhandler = Some(lhandler); }
+    unsafe {
+        ext_readline::rl_callback_handler_install(cprmt, coerced_callback);
+    }
+}
+
+/// Invokes `rl_callback_read_char()`
+///
+/// This function will panic if `rl_callback_handler_install()` has not yet
+/// been called.  (As there is no handler for it to invoke).
+pub fn rl_callback_read_char() {
+    unsafe {
+        ext_readline::rl_callback_read_char();
+    }
+}
+
+pub fn rl_callback_handler_remove() {
+    unsafe { _lhandler = None };
+    unsafe {
+        ext_readline::rl_callback_handler_remove();
     }
 }
 
