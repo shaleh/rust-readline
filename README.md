@@ -12,4 +12,4 @@ Exposes:
  - `unstifle_history() -> i32`
  - `readline(prompt: &str) -> Option<String>`
 
-https://gitter.im/shaleh/rust-readline is available.
+A Gitter [channel](https://gitter.im/shaleh/rust-readline) is available.
