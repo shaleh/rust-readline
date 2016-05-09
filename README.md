@@ -1,6 +1,8 @@
 rust-readline
 =============
 
+[![Join the chat at https://gitter.im/shaleh/rust-readline](https://badges.gitter.im/shaleh/rust-readline.svg)](https://gitter.im/shaleh/rust-readline?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Simple wrapper around readline for the Rust language
 
 Exposes:
